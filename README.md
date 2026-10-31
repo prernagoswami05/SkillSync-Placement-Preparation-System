@@ -1,68 +1,82 @@
-# SkillSync – Placement Preparation System
+# SkillSync – Placement Preparation System 🚀
 
-**A comprehensive placement preparation platform designed to help students assess their technical skills, track performance, and prepare for placement opportunities.**
+**Prepare Smarter. Assess Better. Get Placement Ready.**
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen)](https://skillsync-placement-preparation-system.onrender.com)
-[![Node.js](https://img.shields.io/badge/Node.js-20%2B-green)](https://nodejs.org/)
-[![Express.js](https://img.shields.io/badge/Express.js-Backend-black)](https://expressjs.com/)
-[![MongoDB](https://img.shields.io/badge/Database-MongoDB-green)](https://www.mongodb.com/)
-[![JavaScript](https://img.shields.io/badge/JavaScript-ES6-yellow)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+SkillSync is a web-based placement preparation platform designed to help students improve their technical skills, practice assessments, track performance, and prepare for campus placement opportunities.
 
-## 🌐 Live Demo
+🌐 **Live Demo:** [Visit SkillSync](https://skillsync-placement-preparation-system.onrender.com)
 
-**Project URL:** https://skillsync-placement-preparation-system.onrender.com
+---
 
 ## 📌 About the Project
 
-SkillSync is a web-based placement preparation system developed to help students prepare for technical assessments and campus placement opportunities.
+SkillSync provides students with a centralized platform for placement preparation. It combines technical assessments, mock tests, performance tracking, preparation resources, and placement guidance in one application.
 
-The platform provides assessment tools, performance tracking, preparation resources, and placement guidance in one place.
+The platform also includes a dedicated administrator portal for managing assessment questions and maintaining the question bank.
 
-It also includes an administrator portal for managing placement assessment questions.
+The main objective of SkillSync is to make placement preparation more structured, accessible, and effective for students.
 
-## ✨ Key Features
+## ✨ Features
 
 ### 👨‍🎓 Student Module
+
 - Student registration and login.
 - Personalized placement preparation dashboard.
 - Technical and aptitude assessment practice.
-- Topic-wise practice and mock tests.
+- Topic-wise practice tests.
+- Mock assessments.
 - Performance reports and score analysis.
 - Assessment attempt history.
 - Preparation roadmap.
-- Placement mentor and guidance resources.
-- Company suggestions and placement guide.
+- Placement mentor resources.
+- Company suggestions.
+- Placement guidance.
 
 ### 🛠️ Administrator Module
+
 - Dedicated administrator login.
 - Administrator dashboard.
 - Question bank management.
-- Add and delete assessment questions.
+- Add new assessment questions.
+- Delete existing questions.
 - Subject-wise question organization.
 - Difficulty-based question management.
 
 ### 🔐 Authentication & Security
+
 - Password hashing using bcrypt.
 - JWT-based authentication.
 - Role-based administrator authorization.
 - MongoDB database integration.
-- Environment-based configuration for sensitive credentials.
+- Environment variables for sensitive configuration.
+- Separate Super Admin and normal Admin privileges.
 
-## 🧰 Tech Stack
+## 🧰 Technology Stack
 
 | Technology | Purpose |
 |---|---|
 | HTML5 | Frontend structure |
-| CSS3 | Styling and responsive layout |
+| CSS3 | Styling and responsive design |
 | JavaScript | Frontend functionality |
 | Node.js | Backend runtime |
-| Express.js | Backend framework and APIs |
-| MongoDB Atlas | Database |
-| Mongoose / MongoDB Driver | Database integration, as configured |
-| JWT | Authentication |
+| Express.js | Backend framework and REST APIs |
+| MongoDB Atlas | Cloud database |
+| MongoDB Node.js Driver | Database connectivity |
+| JSON Web Token (JWT) | Authentication |
 | Bcrypt.js | Password hashing |
-| Render | Deployment |
-| Git & GitHub | Version control |
+| Git | Version control |
+| GitHub | Source code management |
+| Render | Application deployment |
+
+## 🌐 Live Application
+
+**Visit the deployed application:**
+
+[https://skillsync-placement-preparation-system.onrender.com](https://skillsync-placement-preparation-system.onrender.com)
+
+The application is deployed using Render and connected to MongoDB Atlas.
+
+*Note: The free hosting service may take some time to respond after a period of inactivity.*
 
 ## 📂 Project Structure
 
@@ -95,16 +109,16 @@ SkillSync-Placement-Preparation-System/
 │
 ├── .env.example
 ├── .gitignore
+├── README.md
 ├── index.html
 ├── package.json
 ├── package-lock.json
-├── server.js
-└── README.md
+└── server.js
 ```
 
 ## ⚙️ Installation & Setup
 
-Follow these steps to run SkillSync locally.
+Follow these steps to run the project on your local machine.
 
 ### 1. Clone the Repository
 
@@ -126,7 +140,7 @@ npm install
 
 ### 4. Configure Environment Variables
 
-Create a `.env` file in the root directory and configure the following variables:
+Create a `.env` file in the root directory and add the following configuration:
 
 ```env
 PORT=3000
@@ -136,7 +150,9 @@ SUPER_ADMIN_EMAIL=your_super_admin_email
 SUPER_ADMIN_PASSWORD=your_super_admin_password
 ```
 
-**Important:** Replace the placeholder values with your own credentials. Never upload your actual `.env` file or database credentials to GitHub.
+Replace the placeholder values with your own credentials.
+
+**Important:** Never upload your actual `.env` file, database connection string, or passwords to GitHub.
 
 ### 5. Start the Development Server
 
@@ -144,7 +160,7 @@ SUPER_ADMIN_PASSWORD=your_super_admin_password
 npm run dev
 ```
 
-Alternatively:
+Alternatively, run:
 
 ```bash
 node server.js
@@ -152,49 +168,62 @@ node server.js
 
 ### 6. Open the Application
 
+**Live Application:**
+
+https://skillsync-placement-preparation-system.onrender.com
+
+**Local Development:**
+
+After starting the server, open:
+
 ```text
 http://localhost:3000
 ```
 
 ## 🗄️ Database
 
-SkillSync uses MongoDB Atlas for storing application data.
+SkillSync uses **MongoDB Atlas** as its cloud database.
 
-The database supports:
+The database is used to store:
+
 - User account information.
 - Assessment questions.
 - Student assessment attempts.
 - Application-related data.
 
-Database connection details are configured through environment variables.
+Database credentials are configured through environment variables to keep sensitive information separate from the source code.
 
 ## 🚀 Deployment
 
-The application is deployed using **Render**.
+The application is deployed on **Render**.
 
 Deployment workflow:
 
-1. Push the project code to GitHub.
-2. Connect the GitHub repository to Render.
-3. Create a Node.js Web Service.
-4. Configure the build command:
+1. Develop the application locally.
+2. Push source code to GitHub.
+3. Connect the GitHub repository to Render.
+4. Create a Node.js Web Service.
+5. Configure the build command:
 
 ```bash
 npm install
 ```
 
-5. Configure the start command:
+6. Configure the start command:
 
 ```bash
 node server.js
 ```
 
-6. Add the required environment variables.
-7. Deploy the application.
+7. Add the required environment variables.
+8. Deploy the application.
 
-**Live Application:** https://skillsync-placement-preparation-system.onrender.com
+**Live URL:**  
+https://skillsync-placement-preparation-system.onrender.com
 
 ## 🔮 Future Improvements
+
+The following improvements are planned for future development:
 
 - Dedicated Super Admin interface for managing administrator accounts.
 - Admin account creation and deactivation interface.
@@ -213,8 +242,12 @@ GitHub: [@prernagoswami05](https://github.com/prernagoswami05)
 
 ## ⭐ Support
 
-If you find this project useful, consider giving it a ⭐ on GitHub.
+If you find this project useful, consider giving the repository a ⭐ on GitHub.
 
 ---
 
-**SkillSync – Prepare Smarter. Assess Better. Get Placement Ready.**
+<p align="center">
+
+**SkillSync – Prepare Smarter. Assess Better. Get Placement Ready.** 🚀
+
+</p>
