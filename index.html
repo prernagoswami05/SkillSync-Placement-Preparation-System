@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillSync – Placement Preparation System</title>
+  <meta name="description" content="A clean and professional placement preparation platform for college students with placement assessments, performance reports, roadmaps, and company suggestions.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="toast-container"></div>
+
+  <!-- Top Sticky Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div style="display: flex; align-items: center; gap: 0.625rem;">
+          <div class="brand-logo" style="width: 34px; height: 34px; font-size: 1.0625rem;">S</div>
+          <div>
+            <div class="brand-title" style="font-size: 1.125rem;">Skill<span>Sync</span></div>
+            <div class="brand-subtitle" style="font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.05em;">Placement Portal</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.75rem; color: var(--text-sub);" class="hidden-mobile">
+          <span>Target: <strong id="nav-target-role" style="color: var(--text-main);">Software Engineer</strong></span>
+          <span style="color: var(--border);">|</span>
+          <span>Tier: <strong id="nav-target-tier" style="color: var(--text-main);">BEGINNER</strong></span>
+          <span id="header-admin-badge" class="badge-tag badge-admin" style="display: none;">Admin Mode</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="user-badge">
+          <div id="header-user-avatar" class="user-avatar">S</div>
+          <div class="user-meta hidden-mobile">
+            <div id="header-user-name" class="user-name">Student</div>
+            <div id="header-user-role" class="user-role">Software Engineer</div>
+          </div>
+        </div>
+
+        <button type="button" id="logout-btn" class="btn btn-outline btn-sm" style="color: var(--text-sub);">
+          Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+ 
+<!-- Navigation Tab Bar -->
+<nav class="app-nav">
+  <div class="nav-inner">
+    <button type="button" class="nav-link active" data-tab="dashboard">Dashboard</button>
+    <button type="button" class="nav-link" data-tab="assessment">Assessment Engine</button>
+    <button type="button" class="nav-link" data-tab="report">Performance Report</button>
+    <button type="button" class="nav-link" data-tab="history">Attempt History</button>
+    <button type="button" class="nav-link" data-tab="mentor">Placement Mentor</button>
+    <button type="button" class="nav-link" data-tab="roadmap">Preparation Roadmap</button>
+    <button type="button" class="nav-link" data-tab="companies">Company Suggestions</button>
+    <button type="button" class="nav-link" data-tab="guide">Placement Guide</button>
+
+    <button type="button" id="nav-admin-tab" class="nav-link" data-tab="admin_questions" style="display: none; color: #92400e;">
+      Manage Questions
+    </button>
+
+    <button type="button" id="nav-super-admin-tab" class="nav-link" data-tab="manage_admins" style="display: none; color: #1d4ed8;">
+      Manage Admins
+    </button>
+  </div>
+</nav>
+
+
+  <!-- Main View Content Sections -->
+  <main class="main-content">
+    <section id="section-dashboard" class="tab-section">
+      <div id="dashboard-content"></div>
+    </section>
+
+    <section id="section-assessment" class="tab-section" style="display: none;">
+      <div id="assessment-view-container"></div>
+    </section>
+
+    <section id="section-report" class="tab-section" style="display: none;">
+      <div id="report-content"></div>
+    </section>
+
+    <section id="section-history" class="tab-section" style="display: none;">
+      <div id="history-content"></div>
+    </section>
+
+    <section id="section-mentor" class="tab-section" style="display: none;">
+      <div id="mentor-content"></div>
+    </section>
+
+    <section id="section-roadmap" class="tab-section" style="display: none;">
+      <div id="roadmap-content"></div>
+    </section>
+
+    <section id="section-companies" class="tab-section" style="display: none;">
+      <div id="companies-content"></div>
+    </section>
+
+    <section id="section-guide" class="tab-section" style="display: none;">
+      <div id="guide-content"></div>
+    </section>
+
+    <section id="section-admin_questions" class="tab-section" style="display: none;">
+      <div id="admin-questions-content"></div>
+    </section>
+  </main>
+
+  <!-- Admin Add Question Modal -->
+  <div id="add-q-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 640px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1rem;">Add New Placement Question</h3>
+        <button type="button" id="close-add-q-modal" style="background: none; border: none; font-size: 1.25rem; cursor: pointer;">&times;</button>
+      </div>
+      <form id="add-q-form">
+        <div class="modal-body">
+          <div class="grid-cols-2" style="margin-bottom: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label">Subject</label>
+              <select id="modal-q-subject" class="form-control" required></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Topic</label>
+              <input type="text" id="modal-q-topic" class="form-control" placeholder="e.g. Dynamic Programming" required>
+            </div>
+          </div>
+
+          <div class="grid-cols-2" style="margin-bottom: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label">Difficulty</label>
+              <select id="modal-q-diff" class="form-control">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate" selected>Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Question Type</label>
+              <select id="modal-q-type" class="form-control">
+                <option value="conceptual">Conceptual MCQ</option>
+                <option value="code_output">Code Output Prediction</option>
+                <option value="debugging">Debugging & Error Finding</option>
+                <option value="numerical">Numerical Problem</option>
+                <option value="scenario">Scenario-Based</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Question Statement</label>
+            <textarea id="modal-q-text" class="form-control" rows="3" placeholder="Enter problem statement..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Code Snippet (Optional)</label>
+            <textarea id="modal-q-code" class="form-control" rows="3" placeholder="Paste C, C++, Java, or Python snippet if applicable..."></textarea>
+          </div>
+
+          <div style="margin-bottom: 0.75rem;">
+            <label class="form-label">4 Options (Select radio next to correct answer)</label>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="radio" name="modal-correct-opt" value="0" checked>
+                <input type="text" id="modal-opt-0" class="form-control" placeholder="Option A" required>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="radio" name="modal-correct-opt" value="1">
+                <input type="text" id="modal-opt-1" class="form-control" placeholder="Option B" required>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="radio" name="modal-correct-opt" value="2">
+                <input type="text" id="modal-opt-2" class="form-control" placeholder="Option C" required>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="radio" name="modal-correct-opt" value="3">
+                <input type="text" id="modal-opt-3" class="form-control" placeholder="Option D" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Detailed Solution Explanation</label>
+            <textarea id="modal-q-expl" class="form-control" rows="2" placeholder="Explain why the chosen option is correct..." required></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancel-add-q-btn" class="btn btn-outline">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save to Question Bank</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

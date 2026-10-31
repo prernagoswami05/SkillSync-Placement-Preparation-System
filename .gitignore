@@ -1,0 +1,21 @@
+
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+
+# Environment secrets
+.env*
+!.env.example
+
+# Local user data
+data/users.json
+
+# Local backups
+*.bak
+*.tmp
+
+data/users.json
+data/attempts.json

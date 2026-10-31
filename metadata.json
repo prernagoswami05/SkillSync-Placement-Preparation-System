@@ -1,0 +1,6 @@
+{
+  "name": "SkillSync – Placement Preparation System",
+  "description": "A clean and professional placement preparation platform for college students with placement assessments, performance reports, roadmaps, and company suggestions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
