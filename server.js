@@ -1,5 +1,6 @@
 import express from 'express';
 import fs from 'fs';
+import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
@@ -7,6 +8,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { MongoClient } from 'mongodb';
 import { initialQuestionBank, ALL_SUBJECTS } from './data/questionBank.js';
+import Razorpay from 'razorpay';
 import {
   ALL_ROLES,
   ALL_SKILLS,
@@ -49,6 +51,8 @@ const QUESTIONS_FILE = path.join(DATA_DIR, 'questions.json');
 const ATTEMPTS_FILE = path.join(DATA_DIR, 'attempts.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
+console.log('Users file being loaded from:', USERS_FILE);
+
 // MongoDB handles
 let mongoClient = null;
 let mongoDb = null;
@@ -62,7 +66,6 @@ function sanitizeUser(u) {
     email: u.email,
     role: u.role,
     isAdmin: !!u.isAdmin,
-    isSuperAdmin: u.isSuperAdmin === true,
     trackedSkills: u.trackedSkills || [
       'Data Structures and Algorithms (DSA)',
       'Database Management Systems (DBMS)',
@@ -70,6 +73,11 @@ function sanitizeUser(u) {
     ],
     lastAssessmentScore: u.lastAssessmentScore,
     readinessLevel: u.readinessLevel || 'beginner',
+
+    // Subscription details
+    subscriptionPlan: u.subscriptionPlan || 'free',
+    subscriptionExpiry: u.subscriptionExpiry || null,
+    freeAssessmentCount: u.freeAssessmentCount || 0,
   };
 }
 
@@ -130,12 +138,17 @@ function loadUsersFromFile() {
           passwordHash: u.passwordHash || bcrypt.hashSync('Student@123', 10),
           role: u.role || 'Software Engineer',
           isAdmin: !!u.isAdmin,
+          isSuperAdmin: u.isSuperAdmin === true,
           trackedSkills: u.trackedSkills || [
             'Data Structures and Algorithms (DSA)',
             'Database Management Systems (DBMS)',
             'Operating Systems (OS)',
           ],
           readinessLevel: u.readinessLevel || 'beginner',
+          subscriptionPlan: u.subscriptionPlan || 'free',
+subscriptionExpiry: u.subscriptionExpiry || null,
+freeAssessmentCount: u.freeAssessmentCount || 0,
+freeAssessmentWindowStart: u.freeAssessmentWindowStart || null,
           lastAssessmentScore: u.lastAssessmentScore,
           createdAt: u.createdAt || new Date().toISOString(),
           updatedAt: u.updatedAt || new Date().toISOString(),
@@ -157,15 +170,22 @@ let assessmentAttempts = loadAttemptsFromFile();
 let userAccounts = loadUsersFromFile();
 
 function seedInitialUsers() {
+  // Demo account should only be created in local development
+  if (
+    process.env.NODE_ENV === 'production' ||
+    process.env.SEED_DEMO_USER !== 'true'
+  ) {
+    return;
+  }
+
   let changed = false;
 
-
-
-  // 2. Demo Student Account
   const studentEmail = 'student@skillsync.edu';
+
   const existingStudent = userAccounts.find(
     (u) => u.email && u.email.toLowerCase() === studentEmail.toLowerCase()
   );
+
   if (!existingStudent) {
     const studentAccount = {
       id: 'student-seed-01',
@@ -185,6 +205,7 @@ function seedInitialUsers() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+
     userAccounts.push(studentAccount);
     changed = true;
   }
@@ -208,6 +229,8 @@ async function ensureSuperAdmin() {
   const existingUser = userAccounts.find(
     (u) => u.email?.toLowerCase() === SUPER_ADMIN_EMAIL
   );
+
+
 
   if (existingUser) {
     if (!existingUser.isSuperAdmin) {
@@ -359,13 +382,30 @@ async function startServer() {
       if (existingUsersCount === 0 && userAccounts.length > 0) {
         await usersCollection.insertMany(userAccounts);
       } else {
-        const mongoUsers = await usersCollection.find().toArray();
-        if (mongoUsers.length > 0) {
-          userAccounts = mongoUsers;
-          saveUsersToFile(userAccounts);
-        }
-      }
 
+  // Initialize subscription fields only when they are missing
+  await usersCollection.updateMany(
+    { subscriptionPlan: { $exists: false } },
+    { $set: { subscriptionPlan: 'free' } }
+  );
+
+  await usersCollection.updateMany(
+    { subscriptionExpiry: { $exists: false } },
+    { $set: { subscriptionExpiry: null } }
+  );
+
+  await usersCollection.updateMany(
+    { freeAssessmentCount: { $exists: false } },
+    { $set: { freeAssessmentCount: 0 } }
+  );
+
+  const mongoUsers = await usersCollection.find().toArray();
+
+  if (mongoUsers.length > 0) {
+    userAccounts = mongoUsers;
+    saveUsersToFile(userAccounts);
+  }
+}
       const existingQuestionsCount = await questionsCollection.countDocuments();
       if (existingQuestionsCount === 0 && questionBank.length > 0) {
         await questionsCollection.insertMany(questionBank);
@@ -437,8 +477,20 @@ if (legacyAdmin && !legacyAdmin.isSuperAdmin) {
 // Create Super Admin account
 await ensureSuperAdmin();
 
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
   const app = express();
-  app.use(express.json());
+
+// Razorpay Webhook: preserve original request body
+app.use('/api/payment/webhook', express.raw({
+  type: 'application/json'
+}));
+
+// Other APIs use normal JSON parsing
+app.use(express.json());
 
   // Serve static HTML, CSS, and Vanilla JavaScript frontend files
   app.use(express.static(path.join(__dirname, 'public')));
@@ -503,6 +555,10 @@ await ensureSuperAdmin();
           'Operating Systems (OS)',
         ],
         readinessLevel: 'beginner',
+        subscriptionPlan: 'free',
+        subscriptionExpiry: null,
+        freeAssessmentCount: 0,
+
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -674,14 +730,461 @@ app.post('/api/auth/forgot-password', (req, res) => {
     error: 'Password reset is temporarily unavailable. Please contact the system administrator.'
   });
 });
-  // 5. Get current profile from token
-  app.get('/api/auth/me', authenticateToken, (req, res) => {
-    const user = userAccounts.find((u) => u.id === req.user.id);
-    if (!user) {
-      return res.status(404).json({ error: 'User profile not found.' });
+  
+// 5. Get current profile from token
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+  try {
+    let user = null;
+
+    if (isMongoConnected && mongoDb) {
+      user = await mongoDb.collection('users').findOne({
+        id: req.user.id
+      });
+    } else {
+      user = userAccounts.find((u) => u.id === req.user.id);
     }
-    res.json({ user: sanitizeUser(user), success: true });
-  });
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'User profile not found.'
+      });
+    }
+
+    res.json({
+      user: sanitizeUser(user),
+      success: true
+    });
+
+  } catch (err) {
+    console.error('Profile fetch error:', err);
+    res.status(500).json({
+      error: 'Unable to fetch user profile.'
+    });
+  }
+});
+
+
+
+// Create Razorpay Payment Order
+app.post('/api/payment/create-order', authenticateToken, async (req, res) => {
+  try {
+    const { plan } = req.body;
+
+    const plans = {
+      monthly: { amount: 9900, durationDays: 30 },
+      quarterly: { amount: 24900, durationDays: 90 }
+    };
+
+    const selectedPlan = plans[plan];
+
+    if (!selectedPlan) {
+      return res.status(400).json({
+        error: 'Invalid subscription plan.'
+      });
+    }
+
+    if (!isMongoConnected || !mongoDb) {
+      return res.status(503).json({
+        error: 'Payment service is temporarily unavailable.'
+      });
+    }
+
+    const order = await razorpay.orders.create({
+      amount: selectedPlan.amount,
+      currency: 'INR',
+      receipt: `skill-${Date.now()}-${req.user.id.slice(-6)}`,
+      notes: {
+        userId: req.user.id,
+        plan
+      }
+    });
+
+    // Save pending payment record in MongoDB
+    await mongoDb.collection('payments').insertOne({
+      orderId: order.id,
+      userId: req.user.id,
+      plan: plan,
+      amount: selectedPlan.amount,
+      currency: 'INR',
+      durationDays: selectedPlan.durationDays,
+      status: 'created',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    res.status(201).json({
+      success: true,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: process.env.RAZORPAY_KEY_ID
+    });
+
+  } catch (err) {
+    console.error('Payment order error:', err);
+    res.status(500).json({
+      error: 'Unable to create payment order.'
+    });
+  }
+});
+
+
+
+// Verify Razorpay Payment and Activate Premium
+app.post('/api/payment/verify', authenticateToken, async (req, res) => {
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature
+  } = req.body;
+
+  try {
+    if (!isMongoConnected || !mongoDb || !mongoClient) {
+      return res.status(503).json({
+        error: 'Payment service is temporarily unavailable.'
+      });
+    }
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({
+        error: 'Payment verification details are missing.'
+      });
+    }
+
+    // Find the pending payment belonging to the logged-in user
+    const paymentRecord = await mongoDb.collection('payments').findOne({
+      orderId: razorpay_order_id,
+      userId: req.user.id
+    });
+
+    if (!paymentRecord) {
+      return res.status(404).json({
+        error: 'Payment order not found.'
+      });
+    }
+
+    // Prevent duplicate activation
+    if (paymentRecord.status === 'paid') {
+      return res.json({
+        success: true,
+        message: 'Premium is already activated.'
+      });
+    }
+
+    if (paymentRecord.status !== 'created') {
+      return res.status(400).json({
+        error: 'Payment cannot be verified in its current state.'
+      });
+    }
+
+    // Verify Razorpay signature
+    const generatedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    const signatureBuffer = Buffer.from(generatedSignature, 'hex');
+    const receivedBuffer = Buffer.from(razorpay_signature, 'hex');
+
+    if (
+      signatureBuffer.length !== receivedBuffer.length ||
+      !crypto.timingSafeEqual(signatureBuffer, receivedBuffer)
+    ) {
+      return res.status(400).json({
+        error: 'Invalid payment signature.'
+      });
+    }
+
+    // Fetch payment directly from Razorpay
+    const razorpayPayment = await razorpay.payments.fetch(
+      razorpay_payment_id
+    );
+
+    if (
+      razorpayPayment.order_id !== razorpay_order_id ||
+      razorpayPayment.status !== 'captured' ||
+      razorpayPayment.amount !== paymentRecord.amount ||
+      razorpayPayment.currency !== paymentRecord.currency
+    ) {
+      return res.status(400).json({
+        error: 'Payment details could not be verified.'
+      });
+    }
+
+    // Update payment and user inside a MongoDB transaction
+    const session = mongoClient.startSession();
+
+    try {
+      await session.withTransaction(async () => {
+        const paymentsCollection = mongoDb.collection('payments');
+        const usersCollection = mongoDb.collection('users');
+
+        const currentPayment = await paymentsCollection.findOne(
+          {
+            orderId: razorpay_order_id,
+            userId: req.user.id,
+            status: 'created'
+          },
+          { session }
+        );
+
+        if (!currentPayment) {
+          throw new Error('PAYMENT_ALREADY_PROCESSED');
+        }
+
+        const currentUser = await usersCollection.findOne(
+          { id: req.user.id },
+          { session }
+        );
+
+        if (!currentUser) {
+          throw new Error('USER_NOT_FOUND');
+        }
+
+        const now = new Date();
+        const existingExpiry = currentUser.subscriptionExpiry
+          ? new Date(currentUser.subscriptionExpiry)
+          : null;
+
+        const startDate =
+          existingExpiry && existingExpiry > now
+            ? existingExpiry
+            : now;
+
+        const expiryDate = new Date(
+          startDate.getTime() +
+          paymentRecord.durationDays * 24 * 60 * 60 * 1000
+        );
+
+        const paymentUpdate = await paymentsCollection.updateOne(
+          {
+            orderId: razorpay_order_id,
+            userId: req.user.id,
+            status: 'created'
+          },
+          {
+            $set: {
+              status: 'paid',
+              paymentId: razorpay_payment_id,
+              paidAt: now,
+              updatedAt: now
+            }
+          },
+          { session }
+        );
+
+        if (paymentUpdate.modifiedCount !== 1) {
+          throw new Error('PAYMENT_ALREADY_PROCESSED');
+        }
+
+        await usersCollection.updateOne(
+          { id: req.user.id },
+          {
+            $set: {
+              subscriptionPlan: paymentRecord.plan,
+              subscriptionExpiry: expiryDate
+            }
+          },
+          { session }
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    return res.json({
+      success: true,
+      message: 'Payment verified. Premium activated.'
+    });
+
+  } catch (err) {
+    if (err.message === 'PAYMENT_ALREADY_PROCESSED') {
+      return res.status(409).json({
+        error: 'This payment has already been processed.'
+      });
+    }
+
+    if (err.message === 'USER_NOT_FOUND') {
+      return res.status(404).json({
+        error: 'User account not found.'
+      });
+    }
+
+    console.error('Payment verification error:', err);
+
+    return res.status(500).json({
+      error: 'Unable to verify payment.'
+    });
+  }
+});
+
+
+
+// ==========================================
+// RAZORPAY WEBHOOK
+// ==========================================
+
+app.post('/api/payment/webhook', async (req, res) => {
+  try {
+    if (!isMongoConnected || !mongoDb || !mongoClient) {
+      return res.status(503).json({ error: 'Database unavailable.' });
+    }
+
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    const signature = req.headers['x-razorpay-signature'];
+
+    if (!webhookSecret || !signature || !Buffer.isBuffer(req.body)) {
+      return res.status(400).json({ error: 'Invalid webhook request.' });
+    }
+
+    // Verify signature using the original raw request body
+    const expectedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(req.body)
+      .digest('hex');
+
+    const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+    const receivedBuffer = Buffer.from(signature, 'hex');
+
+    if (
+      expectedBuffer.length !== receivedBuffer.length ||
+      !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)
+    ) {
+      return res.status(400).json({ error: 'Invalid webhook signature.' });
+    }
+
+    const event = JSON.parse(req.body.toString('utf8'));
+
+    // Handle successful captured payments only
+    if (event.event !== 'payment.captured') {
+      return res.status(200).json({ received: true });
+    }
+
+    const payment = event.payload?.payment?.entity;
+
+    if (!payment || !payment.order_id || !payment.id) {
+      return res.status(400).json({ error: 'Invalid payment event.' });
+    }
+
+    const paymentsCollection = mongoDb.collection('payments');
+    const usersCollection = mongoDb.collection('users');
+
+    const paymentRecord = await paymentsCollection.findOne({
+      orderId: payment.order_id
+    });
+
+    if (!paymentRecord) {
+      return res.status(404).json({ error: 'Payment order not found.' });
+    }
+
+    // Validate captured payment details
+    if (
+      payment.status !== 'captured' ||
+      payment.amount !== paymentRecord.amount ||
+      payment.currency !== paymentRecord.currency
+    ) {
+      return res.status(400).json({ error: 'Payment details mismatch.' });
+    }
+
+    // Already activated by webhook or checkout verification
+    if (paymentRecord.status === 'paid') {
+      return res.status(200).json({ received: true });
+    }
+
+    if (paymentRecord.status !== 'created') {
+      return res.status(200).json({ received: true });
+    }
+
+    const session = mongoClient.startSession();
+
+    try {
+      await session.withTransaction(async () => {
+        const currentPayment = await paymentsCollection.findOne(
+          {
+            orderId: payment.order_id,
+            status: 'created'
+          },
+          { session }
+        );
+
+        if (!currentPayment) {
+          return;
+        }
+
+        const currentUser = await usersCollection.findOne(
+          { id: currentPayment.userId },
+          { session }
+        );
+
+        if (!currentUser) {
+          throw new Error('WEBHOOK_USER_NOT_FOUND');
+        }
+
+        const now = new Date();
+
+        const existingExpiry = currentUser.subscriptionExpiry
+          ? new Date(currentUser.subscriptionExpiry)
+          : null;
+
+        const startDate =
+          existingExpiry && existingExpiry > now
+            ? existingExpiry
+            : now;
+
+        const expiryDate = new Date(
+          startDate.getTime() +
+          currentPayment.durationDays * 24 * 60 * 60 * 1000
+        );
+
+        const result = await paymentsCollection.updateOne(
+          {
+            orderId: payment.order_id,
+            status: 'created'
+          },
+          {
+            $set: {
+              status: 'paid',
+              paymentId: payment.id,
+              paidAt: now,
+              updatedAt: now
+            }
+          },
+          { session }
+        );
+
+        if (result.modifiedCount !== 1) {
+          throw new Error('WEBHOOK_PAYMENT_ALREADY_PROCESSED');
+        }
+
+        await usersCollection.updateOne(
+          { id: currentPayment.userId },
+          {
+            $set: {
+              subscriptionPlan: currentPayment.plan,
+              subscriptionExpiry: expiryDate
+            }
+          },
+          { session }
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
+
+    return res.status(200).json({ received: true });
+
+  } catch (err) {
+    if (err.message === 'WEBHOOK_PAYMENT_ALREADY_PROCESSED') {
+      return res.status(200).json({ received: true });
+    }
+
+    console.error('Razorpay webhook error:', err);
+
+    return res.status(500).json({ error: 'Webhook processing failed.' });
+  }
+});
+
+
 
   // ==========================================
   // ASSESSMENT & QUESTION APIS
@@ -704,8 +1207,77 @@ app.post('/api/auth/forgot-password', (req, res) => {
     res.json({ subjects: subjectsSummary, totalQuestions: questionBank.length });
   });
 
+  // Check student assessment access
+app.get('/api/assessments/access', authenticateToken, async (req, res) => {
+  try {
+    if (!isMongoConnected || !mongoDb) {
+      return res.status(503).json({
+        error: 'Assessment access is temporarily unavailable. Please try again later.'
+      });
+    }
+
+    const user = await mongoDb.collection('users').findOne({
+      id: req.user.id
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'Student account not found.'
+      });
+    }
+
+    const now = new Date();
+
+    const isPremium =
+      user.subscriptionPlan !== 'free' &&
+      user.subscriptionExpiry &&
+      new Date(user.subscriptionExpiry) > now;
+
+    if (isPremium) {
+      return res.json({
+        allowed: true,
+        plan: 'premium',
+        message: 'Unlimited assessment access available.'
+      });
+    }
+
+    const windowStart = user.freeAssessmentWindowStart
+      ? new Date(user.freeAssessmentWindowStart)
+      : null;
+
+    const withinWeeklyWindow =
+      windowStart &&
+      now.getTime() - windowStart.getTime() < 7 * 24 * 60 * 60 * 1000;
+
+    const used = withinWeeklyWindow
+      ? (user.freeAssessmentCount || 0)
+      : 0;
+
+    if (used >= 1) {
+      return res.json({
+        allowed: false,
+        plan: 'free',
+        message: 'Your free assessment has been used. Upgrade to Premium to continue.'
+      });
+    }
+
+    return res.json({
+      allowed: true,
+      plan: 'free',
+      remainingFreeAssessments: 1 - used,
+      message: 'Your free assessment is available.'
+    });
+
+  } catch (err) {
+    console.error('Assessment access check error:', err);
+    res.status(500).json({
+      error: 'Unable to verify assessment access.'
+    });
+  }
+});
+
   // Query questions
-  app.get('/api/questions', (req, res) => {
+  app.get('/api/questions', authenticateToken, (req, res) => {
     const { subject, topic, difficulty, type, limit, company, mode } = req.query;
 
     let filtered = [...questionBank];
@@ -751,11 +1323,25 @@ app.post('/api/auth/forgot-password', (req, res) => {
       filtered = filtered.slice(0, numLimit);
     }
 
-    res.json({ questions: filtered, count: filtered.length });
-  });
+    const safeQuestions = filtered.map((q) => {
+  const {
+    correctAnswer,
+    explanation,
+    ...questionWithoutAnswers
+  } = q;
+
+  return questionWithoutAnswers;
+});
+
+res.json({
+  questions: safeQuestions,
+  count: safeQuestions.length
+});
+
+});
 
   // Submit assessment (isolated to authenticated student)
-  app.post('/api/assessments/submit', authenticateToken, (req, res) => {
+  app.post('/api/assessments/submit', authenticateToken, async (req, res) => {
     try {
       const {
         mode,
@@ -783,42 +1369,57 @@ app.post('/api/auth/forgot-password', (req, res) => {
       const subjectStats = {};
       const topicStats = {};
 
-      const processedAnswers = answers.map((ans) => {
-        const question = questions.find((q) => q.id === ans.questionId);
-        const isSkipped = ans.selectedOption === null || ans.selectedOption === undefined;
-        const isCorrect = !isSkipped && question && ans.selectedOption === question.correctAnswer;
+      const trustedQuestions = questions.map((submittedQuestion) =>
+  questionBank.find((q) => q.id === submittedQuestion.id)
+);
 
-        if (isSkipped) {
-          skippedCount++;
-        } else if (isCorrect) {
-          correctCount++;
-        } else {
-          incorrectCount++;
-        }
+if (
+  trustedQuestions.some((q) => !q) ||
+  new Set(questions.map((q) => q.id)).size !== questions.length
+) {
+  return res.status(400).json({
+    error: 'Invalid or duplicate questions.'
+  });
+}
 
-        if (question) {
-          if (!subjectStats[question.subject]) {
-            subjectStats[question.subject] = { total: 0, correct: 0 };
-          }
-          subjectStats[question.subject].total++;
-          if (isCorrect) subjectStats[question.subject].correct++;
+const processedAnswers = trustedQuestions.map((question) => {
+  const ans = answers.find((a) => a.questionId === question.id);
 
-          if (!topicStats[question.topic]) {
-            topicStats[question.topic] = { subject: question.subject, total: 0, correct: 0 };
-          }
-          topicStats[question.topic].total++;
-          if (isCorrect) topicStats[question.topic].correct++;
-        }
+  const selectedOption = ans?.selectedOption;
+  const isSkipped = selectedOption === null || selectedOption === undefined;
+  const isCorrect = !isSkipped && selectedOption === question.correctAnswer;
 
-        return {
-          questionId: ans.questionId,
-          selectedOption: isSkipped ? null : ans.selectedOption,
-          isCorrect: !!isCorrect,
-          timeSpentSeconds: ans.timeSpentSeconds || 0,
-        };
-      });
+  if (isSkipped) skippedCount++;
+  else if (isCorrect) correctCount++;
+  else incorrectCount++;
 
-      const totalQuestions = questions.length;
+  if (!subjectStats[question.subject]) {
+    subjectStats[question.subject] = { total: 0, correct: 0 };
+  }
+
+  subjectStats[question.subject].total++;
+  if (isCorrect) subjectStats[question.subject].correct++;
+
+  if (!topicStats[question.topic]) {
+    topicStats[question.topic] = {
+      subject: question.subject,
+      total: 0,
+      correct: 0
+    };
+  }
+
+  topicStats[question.topic].total++;
+  if (isCorrect) topicStats[question.topic].correct++;
+
+  return {
+    questionId: question.id,
+    selectedOption: isSkipped ? null : selectedOption,
+    isCorrect,
+    timeSpentSeconds: ans?.timeSpentSeconds || 0
+  };
+});
+
+     const totalQuestions = trustedQuestions.length;
       const scorePercentage = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
       const subjectScores = Object.entries(subjectStats).map(([sub, stats]) => ({
@@ -865,9 +1466,74 @@ app.post('/api/auth/forgot-password', (req, res) => {
         weakTopics,
         recommendedTopics,
         answers: processedAnswers,
-        questionsSnapshot: questions,
+        questionsSnapshot: trustedQuestions,
       };
 
+     // Verify and reserve free assessment access
+if (!isMongoConnected || !mongoDb) {
+  return res.status(503).json({
+    error: 'Assessment service is temporarily unavailable.'
+  });
+}
+
+const usersCollection = mongoDb.collection('users');
+
+const currentUser = await usersCollection.findOne({ id: userId });
+
+if (!currentUser) {
+  return res.status(404).json({
+    error: 'Student account not found.'
+  });
+}
+
+const now = new Date();
+
+const isPremium =
+  currentUser.subscriptionPlan !== 'free' &&
+  currentUser.subscriptionExpiry &&
+  new Date(currentUser.subscriptionExpiry) > now;
+
+if (!isPremium) {
+  const cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  // Start a new weekly window if the previous one expired
+  const resetResult = await usersCollection.updateOne(
+    {
+      id: userId,
+      $or: [
+        { freeAssessmentWindowStart: { $exists: false } },
+        { freeAssessmentWindowStart: null },
+        { freeAssessmentWindowStart: { $lt: cutoff } }
+      ]
+    },
+    {
+      $set: {
+        freeAssessmentWindowStart: now,
+        freeAssessmentCount: 1
+      }
+    }
+  );
+
+  // Otherwise reserve the available assessment in the current window
+  if (resetResult.matchedCount === 0) {
+    const reserveResult = await usersCollection.updateOne(
+      {
+        id: userId,
+        freeAssessmentWindowStart: { $gte: cutoff },
+        freeAssessmentCount: { $lt: 1 }
+      },
+      {
+        $inc: { freeAssessmentCount: 1 }
+      }
+    );
+
+    if (reserveResult.matchedCount === 0) {
+      return res.status(402).json({
+        error: 'Your free assessment has been used. Please upgrade to Premium.'
+      });
+    }
+  }
+}
       assessmentAttempts.unshift(newAttempt);
       saveAttemptsToFile(assessmentAttempts);
 
@@ -987,10 +1653,22 @@ app.post('/api/auth/forgot-password', (req, res) => {
       matchedQuestions = matchedQuestions.slice(0, limit);
     }
 
-    res.json({
-      questions: matchedQuestions,
-      weakTopics: weakTopicsList.length > 0 ? weakTopicsList : ['Binary Trees', 'Deadlocks', 'Pointers'],
-    });
+    const safeQuestions = matchedQuestions.map((q) => {
+  const {
+    correctAnswer,
+    explanation,
+    ...questionWithoutAnswers
+  } = q;
+
+  return questionWithoutAnswers;
+});
+
+res.json({
+  questions: safeQuestions,
+  weakTopics: weakTopicsList.length > 0
+    ? weakTopicsList
+    : ['Binary Trees', 'Deadlocks', 'Pointers'],
+});
   });
 
   // ==========================================
@@ -1022,12 +1700,20 @@ app.post(
   requireSuperAdmin,
   async (req, res) => {
     try {
+
+      if (!isMongoConnected || !mongoDb) {
+  return res.status(503).json({
+    error: 'Admin management is temporarily unavailable. Please try again later.'
+  });
+}
       const { name, email, password } = req.body;
 
       if (!name || !email || !password) {
         return res.status(400).json({
           error: 'Name, email and password are required.'
         });
+
+        
       }
 
       const cleanName = String(name).trim();
@@ -1049,9 +1735,9 @@ app.post(
         });
       }
 
-      const existingUser = userAccounts.find(
-        u => u.email?.toLowerCase() === cleanEmail
-      );
+      const existingUser = await mongoDb.collection('users').findOne({
+  email: cleanEmail
+});
 
       if (existingUser) {
         return res.status(409).json({
@@ -1103,6 +1789,57 @@ app.post(
   }
 );
 
+// ==========================================
+// SUPER ADMIN: GET ALL ADMIN ACCOUNTS
+// ==========================================
+app.get(
+  '/api/admin/list',
+  authenticateToken,
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      if (!isMongoConnected || !mongoDb) {
+        return res.status(503).json({
+          error: 'Admin list is temporarily unavailable.'
+        });
+      }
+
+      const admins = await mongoDb.collection('users')
+        .find(
+          {
+            isAdmin: true,
+            isSuperAdmin: { $ne: true }
+          },
+          {
+            projection: {
+              _id: 0,
+              id: 1,
+              name: 1,
+              email: 1,
+              role: 1,
+              isAdmin: 1,
+              isSuperAdmin: 1,
+              createdAt: 1
+            }
+          }
+        )
+        .toArray();
+
+      res.json({
+        success: true,
+        count: admins.length,
+        admins
+      });
+
+    } catch (err) {
+      console.error('Admin list error:', err);
+
+      res.status(500).json({
+        error: 'Failed to fetch admin accounts.'
+      });
+    }
+  }
+);
 
   // ==========================================
   // ADMIN QUESTION BANK APIS

@@ -4,113 +4,199 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Explore SkillSync Free and Premium placement preparation plans and pricing.">
+  <meta name="description" content="SkillSync Free and Premium placement preparation plans.">
   <title>Pricing Plans | SkillSync</title>
   <link rel="stylesheet" href="/css/style.css">
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 
 <body>
-  <main class="legal-page">
 
-    <h1>SkillSync Pricing Plans</h1>
-    <p>
-      Choose a plan that supports your learning and placement preparation
-      goals. Start with our Free plan or access additional preparation
-      features with Premium.
-    </p>
+<main class="pricing-page">
 
-    <h2>1. Free Plan – ₹0</h2>
-    <p>Get started with essential placement preparation features.</p>
-    <ul>
-      <li>One complete assessment per week.</li>
-      <li>Basic assessment performance report.</li>
-      <li>Basic preparation roadmap.</li>
-      <li>Limited topic-wise practice.</li>
-      <li>Access to available free learning resources.</li>
-    </ul>
-    <p><strong>Price:</strong> Free – no subscription payment required.</p>
+  <h1>Choose Your SkillSync Plan</h1>
+  <p>Prepare smarter. Practice better. Get placement ready.</p>
 
-    <h2>2. Premium Monthly – ₹99</h2>
-    <p>
-      Suitable for students who want additional practice and assessment
-      opportunities.
-    </p>
-    <ul>
-      <li>Unlimited assessments during the active subscription period.</li>
-      <li>Company-specific practice tests.</li>
-      <li>Advanced performance analytics.</li>
-      <li>Weak-topic identification and focused practice.</li>
-      <li>Additional preparation resources.</li>
-      <li>Access to all included Premium features.</li>
-    </ul>
-    <p><strong>Subscription duration:</strong> 1 month.</p>
-    <p><strong>Price:</strong> ₹99 per month.</p>
+  <div class="pricing-grid">
 
-    <h2>3. Premium Quarterly – ₹249</h2>
-    <p>
-      A three-month plan for students who prefer a longer preparation period.
-    </p>
-    <ul>
-      <li>All included Premium features.</li>
-      <li>Unlimited assessments during the active subscription period.</li>
-      <li>Company-specific preparation tests.</li>
-      <li>Advanced performance analytics.</li>
-      <li>Focused practice and additional resources.</li>
-    </ul>
-    <p><strong>Subscription duration:</strong> 3 months.</p>
-    <p><strong>Price:</strong> ₹249 for three months.</p>
-    <p>
-      <strong>Cost comparison:</strong> Three monthly payments would cost
-      ₹297. The quarterly plan costs ₹249, saving ₹48.
-    </p>
+    <!-- FREE PLAN -->
+    <section class="pricing-card">
+      <span class="pricing-badge">GET STARTED</span>
 
-    <h2>4. Subscription Activation</h2>
-    <p>
-      Premium access will be activated after successful payment verification
-      by SkillSync. Users should check their account to confirm that their
-      selected subscription plan has been activated.
-    </p>
+      <h2>Free Plan</h2>
 
-    <h2>5. Subscription Expiry and Renewal</h2>
-    <ul>
-      <li>Monthly Premium access is valid for one month.</li>
-      <li>Quarterly Premium access is valid for three months.</li>
-      <li>Subscriptions do not renew automatically.</li>
-      <li>Users must manually make a new payment to renew after expiry.</li>
-      <li>After expiry, the account returns to Free plan access.</li>
-    </ul>
+      <div class="pricing-price">
+        ₹0 <span>/ forever</span>
+      </div>
 
-    <h2>6. Payments</h2>
-    <p>
-      Payments for Premium subscriptions are processed through the
-      payment methods made available on SkillSync. Premium features
-      are subject to successful payment verification.
-    </p>
+      <p>Start your placement preparation journey.</p>
 
-    <h2>7. Refund and Cancellation</h2>
-    <p>
-      Please review our
-      <a href="/refund.html">Refund and Cancellation Policy</a>
-      before purchasing a subscription. Refund requests are handled
-      according to the conditions described in that policy.
-    </p>
+      <ul>
+        <li>One assessment per week</li>
+        <li>Basic performance report</li>
+        <li>Basic preparation roadmap</li>
+        <li>Limited topic-wise practice</li>
+        <li>Free learning resources</li>
+      </ul>
 
-    <h2>8. Important Information</h2>
-    <ul>
-      <li>Premium access is linked to the user's SkillSync account.</li>
-      <li>Subscription benefits are available only during the active period.</li>
-      <li>Feature availability may depend on the current platform implementation.</li>
-      <li>SkillSync does not guarantee placement, employment or interview selection.</li>
-    </ul>
+      <a href="/" class="pricing-free-link">
+        Continue Free
+      </a>
+    </section>
 
-    <h2>9. Need Assistance?</h2>
-    <p>
-      For questions about plans, payments or subscriptions, visit our
-      <a href="/contact.html">Contact Us</a> page.
-    </p>
 
-    <p><a href="/">← Back to SkillSync</a></p>
+    <!-- MONTHLY PLAN -->
+    <section class="pricing-card">
 
-  </main>
+      <span class="pricing-badge">MONTHLY PLAN</span>
+
+      <h2>Premium Monthly</h2>
+
+      <div class="pricing-price">
+        ₹99 <span>/ 30 days</span>
+      </div>
+
+      <p>For students who want consistent practice.</p>
+
+      <ul>
+        <li>Unlimited assessments</li>
+        <li>Company-specific practice tests</li>
+        <li>Advanced performance analytics</li>
+        <li>Weak-topic focused practice</li>
+        <li>Additional preparation resources</li>
+      </ul>
+
+      <button id="monthly-plan" type="button">
+        Buy Monthly – ₹99
+      </button>
+
+    </section>
+
+
+    <!-- QUARTERLY PLAN -->
+    <section class="pricing-card featured">
+
+      <span class="pricing-badge">BEST VALUE</span>
+
+      <h2>Premium Quarterly</h2>
+
+      <div class="pricing-price">
+        ₹249 <span>/ 90 days</span>
+      </div>
+
+      <p>Prepare for placements with a longer access period.</p>
+
+      <ul>
+        <li>All Premium features</li>
+        <li>Unlimited assessments</li>
+        <li>Company-specific preparation</li>
+        <li>Advanced performance analytics</li>
+        <li>Focused weak-topic practice</li>
+        <li>Additional learning resources</li>
+      </ul>
+
+      <p><strong>Save ₹48 compared with monthly payments.</strong></p>
+
+      <button id="quarterly-plan" type="button">
+        Buy Quarterly – ₹249
+      </button>
+
+    </section>
+
+  </div>
+
+  <p id="payment-message" role="status" aria-live="polite"></p>
+
+  <p class="pricing-note">
+    Subscriptions do not renew automatically.
+    Premium access starts after successful payment verification.
+    <br><br>
+    <a href="/">← Back to SkillSync</a>
+  </p>
+
+</main>
+
+
+<script type="module">
+  import {
+    apiCreatePaymentOrder,
+    apiVerifyPayment
+  } from '/js/api.js';
+
+  const monthlyButton = document.getElementById('monthly-plan');
+  const quarterlyButton = document.getElementById('quarterly-plan');
+  const message = document.getElementById('payment-message');
+
+  async function startPayment(plan, button) {
+    try {
+      button.disabled = true;
+      message.textContent = 'Creating your payment order...';
+
+      const order = await apiCreatePaymentOrder(plan);
+
+      const options = {
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'SkillSync',
+        description: plan === 'monthly'
+          ? 'Premium Monthly - 30 Days'
+          : 'Premium Quarterly - 90 Days',
+        order_id: order.orderId,
+
+        handler: async function (response) {
+          try {
+            message.textContent = 'Verifying payment...';
+
+            await apiVerifyPayment(response);
+
+            message.textContent =
+              'Payment successful! Premium activated.';
+
+          } catch (error) {
+            message.textContent =
+              'Payment verification failed: ' + error.message;
+          } finally {
+            button.disabled = false;
+          }
+        },
+
+        modal: {
+          ondismiss: function () {
+            button.disabled = false;
+            message.textContent = 'Payment cancelled.';
+          }
+        },
+
+        theme: {
+          color: '#2563eb'
+        }
+      };
+
+      const checkout = new window.Razorpay(options);
+
+      checkout.on('payment.failed', function (response) {
+        message.textContent =
+          response.error.description || 'Payment failed.';
+        button.disabled = false;
+      });
+
+      checkout.open();
+
+    } catch (error) {
+      message.textContent = error.message;
+      button.disabled = false;
+    }
+  }
+
+  monthlyButton.addEventListener('click', () => {
+    startPayment('monthly', monthlyButton);
+  });
+
+  quarterlyButton.addEventListener('click', () => {
+    startPayment('quarterly', quarterlyButton);
+  });
+</script>
+
 </body>
 </html>

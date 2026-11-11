@@ -144,6 +144,14 @@ export async function apiGetSubjects() {
   return await apiFetch('/api/subjects');
 }
 
+export async function apiGetAssessmentAccess() {
+  return await apiFetch('/api/assessments/access');
+}
+
+export async function apiGetAdmins() {
+  return await apiFetch('/api/admin/list');
+}
+
 export async function apiGetQuestions(params = {}) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
@@ -203,5 +211,24 @@ export async function apiUpdateQuestion(id, questionData) {
 export async function apiDeleteQuestion(id) {
   return await apiFetch(`/api/admin/questions/${id}`, {
     method: 'DELETE',
+  });
+}
+
+
+ // ==========================================
+// RAZORPAY PAYMENT APIS
+// ==========================================
+
+export async function apiCreatePaymentOrder(plan) {
+  return await apiFetch('/api/payment/create-order', {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  });
+}
+
+export async function apiVerifyPayment(paymentData) {
+  return await apiFetch('/api/payment/verify', {
+    method: 'POST',
+    body: JSON.stringify(paymentData),
   });
 }

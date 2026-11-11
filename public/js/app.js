@@ -10,6 +10,7 @@ import {
   apiAddQuestion,
   apiUpdateQuestion,
   apiDeleteQuestion,
+  apiGetAdmins,
 } from './api.js';
 import { AssessmentEngine } from './assessment.js';
 import { PerformanceReportView } from './report.js';
@@ -74,8 +75,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 7. Render initial tab (dashboard)
   switchTab('dashboard');
-});
 
+});
 function updateHeaderUI() {
   const userNameEl = document.getElementById('header-user-name');
   const userRoleEl = document.getElementById('header-user-role');
@@ -84,12 +85,25 @@ function updateHeaderUI() {
   const targetTierEl = document.getElementById('nav-target-tier');
   const adminBadgeEl = document.getElementById('header-admin-badge');
   const adminNavItem = document.getElementById('nav-admin-tab');
+  const superAdminNavItem = document.getElementById('nav-super-admin-tab');
 
   if (userNameEl) userNameEl.textContent = currentUser.name;
   if (userRoleEl) userRoleEl.textContent = currentUser.role || 'Software Engineer';
   if (userAvatarEl) userAvatarEl.textContent = (currentUser.name || 'S').charAt(0).toUpperCase();
   if (targetRoleEl) targetRoleEl.textContent = currentUser.role || 'Software Engineer';
   if (targetTierEl) targetTierEl.textContent = (currentUser.readinessLevel || 'beginner').toUpperCase();
+
+  const premiumBadge = document.getElementById('nav-premium-badge');
+
+const isPremium =
+  currentUser.subscriptionPlan &&
+  currentUser.subscriptionPlan !== 'free' &&
+  currentUser.subscriptionExpiry &&
+  new Date(currentUser.subscriptionExpiry) > new Date();
+
+if (premiumBadge) {
+  premiumBadge.style.display = isPremium ? 'inline-block' : 'none';
+}
 
   if (currentUser.isAdmin) {
     if (adminBadgeEl) adminBadgeEl.style.display = 'inline-block';
@@ -98,19 +112,43 @@ function updateHeaderUI() {
     if (adminBadgeEl) adminBadgeEl.style.display = 'none';
     if (adminNavItem) adminNavItem.style.display = 'none';
   }
+
+  if (superAdminNavItem) {
+  superAdminNavItem.style.display =
+    currentUser.isSuperAdmin === true ? 'inline-flex' : 'none';
+}
 }
 
+
 function setupNavigation() {
-  document.querySelectorAll('.nav-link').forEach((link) => {
-    link.addEventListener('click', (e) => {
+  const nav = document.querySelector('.app-nav');
+
+  if (nav) {
+    nav.addEventListener('click', (e) => {
+      const link = e.target.closest('.nav-link');
+
+      if (!link || !nav.contains(link)) return;
+
       e.preventDefault();
+
       const tabId = link.getAttribute('data-tab');
+
       if (tabId) {
         switchTab(tabId);
       }
     });
-  });
+  }
+
+  const profileBtn = document.getElementById('header-profile-btn');
+
+  if (profileBtn) {
+    profileBtn.addEventListener('click', () => {
+      switchTab('profile');
+    });
+  }
 }
+
+
 
 export function switchTab(tabId) {
   activeTab = tabId;
@@ -137,6 +175,7 @@ export function switchTab(tabId) {
 
   // Trigger tab-specific renders
   if (tabId === 'dashboard') renderDashboard();
+  else if (tabId === 'profile') renderProfile();
   else if (tabId === 'assessment') assessmentEngine.render();
   else if (tabId === 'report') renderReport();
   else if (tabId === 'history') renderHistory();
@@ -145,6 +184,8 @@ export function switchTab(tabId) {
   else if (tabId === 'companies') renderCompanies();
   else if (tabId === 'guide') renderGuide();
   else if (tabId === 'admin_questions') renderAdminQuestions();
+
+  else if (tabId === 'manage_admins') renderManageAdmins();
 }
 
 // ==========================================
@@ -164,7 +205,63 @@ async function renderDashboard() {
   const latestScore = currentUser.lastAssessmentScore !== undefined ? `${currentUser.lastAssessmentScore}%` : 'Not Tested';
   const tier = (currentUser.readinessLevel || 'beginner').toUpperCase();
 
+const expiryDate = currentUser.subscriptionExpiry
+  ? new Date(currentUser.subscriptionExpiry)
+  : null;
+
+const isPremium =
+  currentUser.subscriptionPlan &&
+  currentUser.subscriptionPlan !== 'free' &&
+  expiryDate &&
+  expiryDate > new Date();
+
+const remainingDays = isPremium
+  ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24))
+  : 0;
+
+const formattedExpiry = expiryDate
+  ? expiryDate.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+  : 'N/A';
+
+const planName = currentUser.subscriptionPlan === 'monthly'
+  ? 'Premium Monthly'
+  : currentUser.subscriptionPlan === 'quarterly'
+    ? 'Premium Quarterly'
+    : 'Free Plan';
+
+
   container.innerHTML = `
+
+
+<!-- Premium Membership Card -->
+<div class="card" style="margin-bottom: 1.5rem; border: 1px solid #a7f3d0; background: linear-gradient(135deg, #ecfdf5, #ffffff);">
+  <div style="padding: 1.25rem;">
+    <div style="font-size: 0.75rem; font-weight: 700; color: #047857;">
+      PREMIUM MEMBERSHIP
+    </div>
+    <h3 style="color: #065f46; margin-top: 0.5rem;">
+      ${isPremium ? planName : 'Free Plan'}
+    </h3>
+    <p style="color: #475569; margin-top: 0.5rem;">
+      ${isPremium
+        ? `Valid until: ${formattedExpiry} · ${remainingDays} days remaining`
+        : 'Upgrade to Premium to unlock advanced features.'}
+    </p>
+    <strong style="color: ${isPremium ? '#047857' : '#64748b'};">
+      ${isPremium ? '✓ ACTIVE' : 'FREE'}
+    </strong>
+    ${!isPremium ? `
+      <p style="margin-top: 0.75rem;">
+        <a href="/pricing.html" class="btn btn-primary btn-sm">Upgrade to Premium</a>
+      </p>
+    ` : ''}
+  </div>
+</div>
+
     <!-- Top Greeting Banner -->
     <div class="card" style="padding: 1.5rem; background: linear-gradient(to right, #ffffff, #f8fafc); border-left: 4px solid var(--primary); margin-bottom: 1.5rem;">
       <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;">
@@ -356,6 +453,107 @@ async function renderDashboard() {
       }
     });
   });
+}
+
+
+function renderProfile() {
+  const container = document.getElementById('profile-content');
+  if (!container || !currentUser) return;
+
+  const expiryDate = currentUser.subscriptionExpiry
+    ? new Date(currentUser.subscriptionExpiry)
+    : null;
+
+  const isPremium =
+    currentUser.subscriptionPlan &&
+    currentUser.subscriptionPlan !== 'free' &&
+    expiryDate &&
+    expiryDate > new Date();
+
+  const remainingDays = isPremium
+    ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  const planName = isPremium
+    ? currentUser.subscriptionPlan.charAt(0).toUpperCase() +
+      currentUser.subscriptionPlan.slice(1)
+    : 'Free';
+
+  const skills = Array.isArray(currentUser.trackedSkills)
+    ? currentUser.trackedSkills
+    : [];
+
+  container.innerHTML = `
+    <div class="profile-page">
+      <h2>My Profile</h2>
+      <p>Manage your personal information and placement progress.</p>
+
+      <div class="profile-card">
+        <h3>Personal Information</h3>
+        <p><strong>Name:</strong> <span id="profile-name"></span></p>
+        <p><strong>Username:</strong> <span id="profile-username"></span></p>
+        <p><strong>Email:</strong> <span id="profile-email"></span></p>
+        <p><strong>Role:</strong> <span id="profile-role"></span></p>
+      </div>
+
+      <div class="profile-card">
+        <h3>Placement Progress</h3>
+        <p><strong>Readiness Level:</strong> <span id="profile-readiness"></span></p>
+        <p><strong>Last Assessment Score:</strong> <span id="profile-score"></span></p>
+        <h4>Tracked Skills</h4>
+        <ul id="profile-skills"></ul>
+      </div>
+
+      <div class="profile-card">
+        <h3>Membership Details</h3>
+        <p><strong>Current Plan:</strong> <span id="profile-plan"></span></p>
+        <p><strong>Membership Status:</strong> <span id="profile-status"></span></p>
+        <p><strong>Expiry Date:</strong> <span id="profile-expiry"></span></p>
+        <p><strong>Days Remaining:</strong> <span id="profile-days"></span></p>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('profile-name').textContent =
+    currentUser.name || 'Not available';
+
+  document.getElementById('profile-username').textContent =
+    currentUser.username || 'Not available';
+
+  document.getElementById('profile-email').textContent =
+    currentUser.email || 'Not available';
+
+  document.getElementById('profile-role').textContent =
+    currentUser.role || 'Student';
+
+  document.getElementById('profile-readiness').textContent =
+    currentUser.readinessLevel || 'Beginner';
+
+  document.getElementById('profile-score').textContent =
+    currentUser.lastAssessmentScore ?? 'Not attempted';
+
+  document.getElementById('profile-plan').textContent = planName;
+
+  document.getElementById('profile-status').textContent =
+    isPremium ? 'Premium Active' : 'Free Plan';
+
+  document.getElementById('profile-expiry').textContent =
+    isPremium ? expiryDate.toLocaleDateString('en-IN') : 'Not applicable';
+
+  document.getElementById('profile-days').textContent =
+    isPremium ? `${remainingDays} days` : '—';
+
+  const skillsList = document.getElementById('profile-skills');
+
+  if (skills.length > 0) {
+    skills.forEach(skill => {
+      const li = document.createElement('li');
+      li.textContent = skill;
+      skillsList.appendChild(li);
+    });
+  } else {
+    skillsList.textContent = 'No skills added yet.';
+  }
 }
 
 // ==========================================
@@ -1061,6 +1259,82 @@ async function renderAdminQuestions() {
     });
   } catch (err) {
     container.innerHTML = `<div class="alert alert-error">Error loading question bank: ${err.message}</div>`;
+  }
+}
+
+// ==========================================
+// 9. SUPER ADMIN - MANAGE ADMINISTRATORS
+// ==========================================
+async function renderManageAdmins() {
+  const container = document.getElementById('manage-admins-content');
+  if (!container) return;
+
+  if (currentUser?.isSuperAdmin !== true) {
+    container.innerHTML = `
+      <div class="alert alert-error">
+        Access denied: Super Administrator privileges required.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Manage Administrators</div>
+          <div class="card-subtitle">Create and view placement administrators.</div>
+        </div>
+      </div>
+      <p>Loading administrators...</p>
+    </div>
+  `;
+
+  try {
+    const response = await apiGetAdmins();
+    const admins = response.admins || [];
+
+    container.innerHTML = `
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Manage Administrators</div>
+            <div class="card-subtitle">Total administrators: ${admins.length}</div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${admins.length ? admins.map(admin => `
+                <tr>
+                  <td>${admin.name || 'N/A'}</td>
+                  <td>${admin.email}</td>
+                  <td>${admin.role || 'Administrator'}</td>
+                  <td>${admin.createdAt ? new Date(admin.createdAt).toLocaleDateString() : 'N/A'}</td>
+                </tr>
+              `).join('') : `
+                <tr><td colspan="4">No administrators created yet.</td></tr>
+              `}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = `
+      <div class="alert alert-error">
+        Unable to load administrators: ${err.message}
+      </div>
+    `;
   }
 }
 

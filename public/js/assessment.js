@@ -3,6 +3,7 @@ import {
   apiGetQuestions,
   apiGetWeakAreaQuestions,
   apiSubmitAssessment,
+  apiGetAssessmentAccess,
 } from './api.js';
 import { showToast } from './toast.js';
 
@@ -288,8 +289,35 @@ export class AssessmentEngine {
       if (overrideParams.topic) this.selectedTopic = overrideParams.topic;
       if (overrideParams.company) this.selectedCompany = overrideParams.company;
     }
-
+    
+     // Show loading while checking access
     const container = document.getElementById('assessment-view-container');
+
+    if (container) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 4rem;">
+          <div style="font-weight: 700;">Verifying your assessment access...</div>
+        </div>
+      `;
+    }
+    
+        // Check free/Premium assessment access
+    try {
+      const access = await apiGetAssessmentAccess();
+
+      if (!access.allowed) {
+        showToast(access.message || 'Upgrade to Premium to continue.', 'error');
+        this.status = 'setup';
+        this.render();
+        return;
+      }
+    } catch (err) {
+      showToast('Unable to verify assessment access. Please try again.', 'error');
+      this.status = 'setup';
+      this.render();
+      return;
+    }
+
     if (container) {
       container.innerHTML = `<div style="text-align: center; padding: 4rem;"><div style="font-size: 1.125rem; font-weight: 700;">Loading questions from placement bank...</div></div>`;
     }

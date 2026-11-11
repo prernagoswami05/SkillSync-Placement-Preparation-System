@@ -16,6 +16,7 @@
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
-    "mongodb": "^7.8.0"
+    "mongodb": "^7.8.0",
+    "razorpay": "^2.9.8"
   }
 }

@@ -858,3 +858,259 @@ a:hover {
     gap: 14px !important;
   }
 }
+
+
+/* ==========================================
+   SKILLSYNC PRICING PAGE BUTTONS
+========================================== */
+
+#monthly-plan,
+#quarterly-plan {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin: 20px 0;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+#monthly-plan:hover,
+#quarterly-plan:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 16px rgba(37, 99, 235, 0.3);
+}
+
+#monthly-plan:disabled,
+#quarterly-plan:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+/* ==========================================
+   SKILLSYNC MODERN PRICING PAGE
+========================================== */
+
+.pricing-page {
+  max-width: 1100px;
+  margin: 50px auto;
+  padding: 30px 24px;
+  color: #172554;
+}
+
+.pricing-page > h1,
+.pricing-page > p {
+  text-align: center;
+}
+
+.pricing-page > h1 {
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.pricing-page > p {
+  color: #64748b;
+  margin-bottom: 35px;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.pricing-card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 30px 24px;
+  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.pricing-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(37, 99, 235, 0.12);
+}
+
+.pricing-card.featured {
+  border: 2px solid #2563eb;
+  background: #f8fbff;
+}
+
+.pricing-card h2 {
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+
+.pricing-price {
+  font-size: 34px;
+  font-weight: 800;
+  color: #2563eb;
+  margin: 18px 0;
+}
+
+.pricing-price span {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.pricing-card ul {
+  padding-left: 20px;
+  color: #475569;
+  line-height: 2;
+  margin: 20px 0;
+}
+
+.pricing-badge {
+  display: inline-block;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 6px 12px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+#monthly-plan,
+#quarterly-plan {
+  width: 100%;
+  max-width: none;
+  margin-top: 20px;
+}
+
+.pricing-card button {
+  min-height: 48px;
+}
+
+.pricing-note {
+  text-align: center;
+  color: #64748b;
+  margin-top: 30px;
+  line-height: 1.7;
+}
+
+@media (max-width: 850px) {
+  .pricing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .pricing-page {
+    margin: 20px auto;
+    padding: 20px 16px;
+  }
+
+  .pricing-page > h1 {
+    font-size: 28px;
+  }
+
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ==========================================
+   SKILLSYNC - MY PROFILE DESIGN
+========================================== */
+
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-bottom: 2rem;
+}
+
+.profile-page > h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.profile-page > p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: -1rem;
+}
+
+.profile-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.04);
+}
+
+.profile-card h3 {
+  font-size: 1.05rem;
+  font-weight: 750;
+  color: #1e40af;
+  margin-bottom: 1.2rem;
+}
+
+.profile-card p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.profile-card p:last-child {
+  border-bottom: none;
+}
+
+.profile-card p strong {
+  color: #1e293b;
+  min-width: 155px;
+}
+
+.profile-card h4 {
+  margin: 1rem 0 0.7rem;
+  color: #1e293b;
+}
+
+#profile-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  list-style: none;
+}
+
+#profile-skills li {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 0.55rem 0.9rem;
+  border-radius: 30px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .profile-card {
+    padding: 1rem;
+  }
+
+  .profile-card p strong {
+    min-width: 120px;
+  }
+}

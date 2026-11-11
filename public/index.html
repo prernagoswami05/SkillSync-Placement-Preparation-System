@@ -25,16 +25,27 @@
           </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.75rem; color: var(--text-sub);" class="hidden-mobile">
-          <span>Target: <strong id="nav-target-role" style="color: var(--text-main);">Software Engineer</strong></span>
-          <span style="color: var(--border);">|</span>
-          <span>Tier: <strong id="nav-target-tier" style="color: var(--text-main);">BEGINNER</strong></span>
-          <span id="header-admin-badge" class="badge-tag badge-admin" style="display: none;">Admin Mode</span>
-        </div>
-      </div>
+    
+<div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.75rem; color: var(--text-sub);" class="hidden-mobile">
+  <span>Target: <strong id="nav-target-role" style="color: var(--text-main);">Software Engineer</strong></span>
+  <span style="color: var(--border);">|</span>
+  <span>Tier: <strong id="nav-target-tier" style="color: var(--text-main);">BEGINNER</strong></span>
+
+  <span
+    id="nav-premium-badge"
+    class="badge-tag"
+    style="display: none; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;"
+  >
+    PREMIUM ACTIVE
+  </span>
+
+  <span id="header-admin-badge" class="badge-tag badge-admin" style="display: none;">Admin Mode</span>
+
+</div>  <!-- hidden-mobile close -->
+</div>  <!-- header-left close -->
 
       <div class="header-right">
-        <div class="user-badge">
+        <div class="user-badge" id="header-profile-btn" role="button" tabindex="0" style="cursor: pointer;">
           <div id="header-user-avatar" class="user-avatar">S</div>
           <div class="user-meta hidden-mobile">
             <div id="header-user-name" class="user-name">Student</div>
@@ -53,6 +64,7 @@
   <nav class="app-nav">
     <div class="nav-inner">
       <button type="button" class="nav-link active" data-tab="dashboard">Dashboard</button>
+
       <button type="button" class="nav-link" data-tab="assessment">Assessment Engine</button>
       <button type="button" class="nav-link" data-tab="report">Performance Report</button>
       <button type="button" class="nav-link" data-tab="history">Attempt History</button>
@@ -81,6 +93,12 @@
     <section id="section-dashboard" class="tab-section">
       <div id="dashboard-content"></div>
     </section>
+
+<!-- My Profile -->
+<section id="section-profile" class="tab-section" style="display: none;">
+  <div id="profile-content"></div>
+</section>
+
 
     <!-- 2. Assessment Engine -->
     <section id="section-assessment" class="tab-section" style="display: none;">
