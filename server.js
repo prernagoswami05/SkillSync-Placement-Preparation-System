@@ -1026,6 +1026,7 @@ app.post('/api/payment/verify', authenticateToken, async (req, res) => {
 
 app.post('/api/payment/webhook', async (req, res) => {
   try {
+    console.log('WEBHOOK REQUEST REACHED SERVER');
     if (!isMongoConnected || !mongoDb || !mongoClient) {
       return res.status(503).json({ error: 'Database unavailable.' });
     }
@@ -1033,15 +1034,19 @@ app.post('/api/payment/webhook', async (req, res) => {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
     const signature = req.headers['x-razorpay-signature'];
 
-    if (!webhookSecret || !signature || !Buffer.isBuffer(req.body)) {
-      return res.status(400).json({ error: 'Invalid webhook request.' });
-    }
-
-    console.log('Webhook diagnostic:', {
+     console.log('Webhook diagnostic:', {
   secretLoaded: Boolean(webhookSecret),
   signatureReceived: Boolean(signature),
   rawBodyBuffer: Buffer.isBuffer(req.body)
 });
+
+if (!isMongoConnected || !mongoDb || !mongoClient) {
+  return res.status(503).json({ error: 'Database unavailable.' });
+}
+
+    if (!webhookSecret || !signature || !Buffer.isBuffer(req.body)) {
+      return res.status(400).json({ error: 'Invalid webhook request.' });
+    }
 
     // Verify signature using the original raw request body
     const expectedSignature = crypto
