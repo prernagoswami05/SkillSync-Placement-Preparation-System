@@ -1046,12 +1046,15 @@ app.post('/api/payment/webhook', async (req, res) => {
     const expectedBuffer = Buffer.from(expectedSignature, 'hex');
     const receivedBuffer = Buffer.from(signature, 'hex');
 
-    if (
-      expectedBuffer.length !== receivedBuffer.length ||
-      !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)
-    ) {
-      return res.status(400).json({ error: 'Invalid webhook signature.' });
-    }
+  if (
+  expectedBuffer.length !== receivedBuffer.length ||
+  !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)
+) {
+  console.error('Razorpay webhook signature verification failed.');
+  return res.status(400).json({ error: 'Invalid webhook signature.' });
+}
+
+console.log('Razorpay webhook signature verified successfully.');
 
     const event = JSON.parse(req.body.toString('utf8'));
     
