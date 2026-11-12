@@ -998,27 +998,48 @@ app.post('/api/payment/verify', authenticateToken, async (req, res) => {
     });
 
   } catch (err) {
-    if (err.message === 'PAYMENT_ALREADY_PROCESSED') {
+  if (err.message === 'PAYMENT_ALREADY_PROCESSED') {
+    try {
+      const processedPayment = await mongoDb.collection('payments').findOne({
+        orderId: razorpay_order_id,
+        userId: req.user.id,
+        paymentId: razorpay_payment_id,
+        status: 'paid'
+      });
+
+      if (processedPayment) {
+        return res.json({
+          success: true,
+          message: 'Payment already verified and Premium activated.'
+        });
+      }
+
       return res.status(409).json({
         error: 'This payment has already been processed.'
       });
-    }
 
-    if (err.message === 'USER_NOT_FOUND') {
-      return res.status(404).json({
-        error: 'User account not found.'
+    } catch (checkError) {
+      console.error('Processed payment check error:', checkError);
+
+      return res.status(500).json({
+        error: 'Unable to confirm payment status.'
       });
     }
+  }
 
-    console.error('Payment verification error:', err);
-
-    return res.status(500).json({
-      error: 'Unable to verify payment.'
+  if (err.message === 'USER_NOT_FOUND') {
+    return res.status(404).json({
+      error: 'User account not found.'
     });
   }
+
+  console.error('Payment verification error:', err);
+
+  return res.status(500).json({
+    error: 'Unable to verify payment.'
+  });
+}
 });
-
-
 
 // ==========================================
 // RAZORPAY WEBHOOK
