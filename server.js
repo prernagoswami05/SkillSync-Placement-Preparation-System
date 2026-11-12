@@ -1054,6 +1054,8 @@ app.post('/api/payment/webhook', async (req, res) => {
     }
 
     const event = JSON.parse(req.body.toString('utf8'));
+    
+    console.log('Razorpay webhook received:', event.event);
 
     // Handle successful captured payments only
     if (event.event !== 'payment.captured') {
@@ -1167,9 +1169,14 @@ app.post('/api/payment/webhook', async (req, res) => {
           { session }
         );
       });
-    } finally {
+     } finally {
       await session.endSession();
     }
+
+    console.log(
+      'Razorpay webhook processed successfully:',
+      payment.id
+    );
 
     return res.status(200).json({ received: true });
 
