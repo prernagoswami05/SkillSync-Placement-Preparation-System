@@ -1037,6 +1037,12 @@ app.post('/api/payment/webhook', async (req, res) => {
       return res.status(400).json({ error: 'Invalid webhook request.' });
     }
 
+    console.log('Webhook diagnostic:', {
+  secretLoaded: Boolean(webhookSecret),
+  signatureReceived: Boolean(signature),
+  rawBodyBuffer: Buffer.isBuffer(req.body)
+});
+
     // Verify signature using the original raw request body
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
